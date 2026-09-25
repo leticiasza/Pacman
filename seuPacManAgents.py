@@ -68,11 +68,11 @@ class ReflexAgent(Agent):
         to create a masterful evaluation function.
         """
         # Useful information you can extract from a GameState (pacman.py)
-        successorGameState = currentGameState.generatePacmanSuccessor(action)
-        newPos = successorGameState.getPacmanPosition()
-        newFood = successorGameState.getFood()
-        newGhostStates = successorGameState.getGhostStates()
-        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+        successorGameState = currentGameState.generatePacmanSuccessor(action) #simula a ação e devolve o estado resultante
+        newPos = successorGameState.getPacmanPosition() #calcula a posição do Pac-Man depois de se mover
+        newFood = successorGameState.getFood() #grid de verdadeiro ou falso das comidas que sobraram; newFood.asList() transforma em lista de posições
+        newGhostStates = successorGameState.getGhostStates() #estado de cada fantasma (posição, assustado, direção)
+        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates] #tempo que resta do fantasma com medo. 0 = fantasma perigoso
 
         "*** YOUR CODE HERE ***"
         return successorGameState.getScore()
@@ -118,16 +118,16 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         def minimax(agentIndex=0, depth=0, state=gameState):
             # 1) Condição de parada: jogo acabou ou profundidade máxima atingida
-            if state.isWin() or state.isLose() or depth == self.depth:
+            if state.isWin() or state.isLose() or depth == self.depth: #jogo acaba com vitória, derrota ou quando todas as rodadas permitidas já foram jogadas
                 return self.evaluationFunction(state)
 
             # 2) Calcula o próximo agente e a próxima profundidade
             numAgents = state.getNumAgents()
-            nextAgent = (agentIndex + 1) % numAgents
+            nextAgent = (agentIndex + 1) % numAgents #o % faz com quem o ciclo volte: após o último fanstama jogar vem o 0 e quando termina o ciclo a profundidade aumenta
             # a profundidade só aumenta quando o "ciclo" volta pro Pac-Man,
             # ou seja, quando o agente atual é o último fantasma
             if agentIndex == numAgents - 1:
-                nextDepth = depth + 1
+                nextDepth = depth + 1 #calculo da próxima profundidade
             else:
                 nextDepth = depth
 
@@ -135,50 +135,52 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
             # Caso extremo: agente sem ações legais disponíveis
             if not legalActions:
-                return self.evaluationFunction(state)
+                return self.evaluationFunction(state) #evita que max/min fiquem com +- infinito ou que bestAction  fique None numa chamada interna
 
             # 3) Turno do Pac-Man (agentIndex == 0), maximização
-            if agentIndex == 0:
-                bestValue = -float('inf')
+            if agentIndex == 0: #indice do Pac-Man é sempre 0
+                bestValue = -float('inf') #cria uma variável -infinito para que o algoritmo possa fazer a comparação a fim de o código ache a maior nota entre as ações
                 bestAction = None
 
-                for action in legalActions:
-                    successor = state.generateSuccessor(agentIndex, action)
-                    score = minimax(nextAgent, nextDepth, successor)
+                #simulação do quanto vale a pena seguir um caminho
+                for action in legalActions: #passa por cada ação legal
+                    successor = state.generateSuccessor(agentIndex, action) #simula o resultado que se daria se o agente (agentIndex) passasse por ali. não altera o estado do original
+                    score = minimax(nextAgent, nextDepth, successor) #chama os próximos agentes, produndidades seguidamente para testar as ações deles
+                    #Pac-Man maximiza, Fantasma minimiza
 
                     if score > bestValue:
-                        bestValue = score
+                        bestValue = score      #Maximização. calcula a melhor movimentação depois guarda a pontuação e a ação
                         bestAction = action
 
                 # Só retornamos a AÇÃO na chamada de nível mais externo
                 # (quando estamos na profundidade 0, chamada original de getAction)
-                if depth == 0:
+                if depth == 0: #Pac-Man só joga na depth == 0
                     return bestAction
                 return bestValue
 
             # 4) Turno dos fantasmas (agentIndex > 0), minimização
             else:
-                worstValue = float('inf')
+                worstValue = float('inf') #cria uma variável infinito para que o algoritmo possa fazer a comparação a fim de o código ache a maior nota entre as ações
 
                 for action in legalActions:
-                    successor = state.generateSuccessor(agentIndex, action)
-                    score = minimax(nextAgent, nextDepth, successor)
+                    successor = state.generateSuccessor(agentIndex, action) #simula o resultado que se daria se o agente (agentIndex) passasse por ali. não altera o estado do original
+                    score = minimax(nextAgent, nextDepth, successor) #chama os próximos agentes, produndidades seguidamente para testar as ações deles
 
                     if score < worstValue:
-                        worstValue = score
+                        worstValue = score #Minimização
 
                 return worstValue
 
         return minimax()
 
 
-def betterEvaluationFunction(currentGameState: GameState):
+def betterEvaluationFunction(currentGameState: GameState): #coleta dos dados de cada uma das funções abaixo
     pos = currentGameState.getPacmanPosition()
     food = currentGameState.getFood().asList()
     ghostStates = currentGameState.getGhostStates()
 
     # Calcula a distância de Manhattan para a comida mais próxima
-    foodDistances = [manhattanDistance(pos, f) for f in food]
+    foodDistances = [manhattanDistance(pos, f) for f in food] #calcula distância 
     if len(foodDistances) > 0:
         minFoodDistance = min(foodDistances)
     else:
